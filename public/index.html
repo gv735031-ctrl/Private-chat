@@ -1,604 +1,1227 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<title>Private Chat</title>
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #111827;
-            color: white;
-        }
+<style>
 
-        .screen {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+*{
+    box-sizing:border-box;
+}
 
-        .card {
-            width: 100%;
-            max-width: 430px;
-            background: #1f2937;
-            border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 10px 35px rgba(0,0,0,.35);
-        }
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#111827;
+    color:white;
+}
 
-        h1 {
-            text-align: center;
-            margin-top: 0;
-        }
+button,input{
+    font-family:inherit;
+}
 
-        input, button {
-            width: 100%;
-            padding: 14px;
-            margin-top: 12px;
-            border: 0;
-            border-radius: 10px;
-            font-size: 16px;
-        }
+.screen{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
 
-        input {
-            background: #374151;
-            color: white;
-            outline: none;
-        }
+.card{
+    width:100%;
+    max-width:430px;
+    background:#1f2937;
+    padding:25px;
+    border-radius:18px;
+    box-shadow:0 10px 35px rgba(0,0,0,.4);
+}
 
-        button {
-            background: #2563eb;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
+h1{
+    text-align:center;
+    margin-top:0;
+}
 
-        button:hover {
-            background: #1d4ed8;
-        }
+input{
+    width:100%;
+    padding:14px;
+    margin-top:12px;
+    border:0;
+    border-radius:10px;
+    background:#374151;
+    color:white;
+    outline:none;
+    font-size:16px;
+}
 
-        #chatScreen {
-            display: none;
-            min-height: 100vh;
-            flex-direction: column;
-        }
+button{
+    border:0;
+    border-radius:10px;
+    padding:13px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
 
-        .header {
-            padding: 15px;
-            background: #1f2937;
-            border-bottom: 1px solid #374151;
-        }
+.joinBtn{
+    width:100%;
+    margin-top:12px;
+    background:#2563eb;
+    color:white;
+}
 
-        .owner {
-            font-size: 18px;
-            font-weight: bold;
-        }
+.joinBtn:hover{
+    background:#1d4ed8;
+}
 
-        .online {
-            color: #22c55e;
-            font-size: 13px;
-            margin-top: 5px;
-        }
+.error{
+    color:#f87171;
+    text-align:center;
+    margin-top:10px;
+    font-size:14px;
+}
 
-        #messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-        }
+/* CHAT */
 
-        .message {
-            max-width: 80%;
-            margin: 8px 0;
-            padding: 10px 12px;
-            border-radius: 13px;
-            background: #374151;
-            word-wrap: break-word;
-        }
+#chatScreen{
+    display:none;
+    min-height:100vh;
+    flex-direction:column;
+}
 
-        .mine {
-            margin-left: auto;
-            background: #2563eb;
-        }
+.header{
+    padding:14px 16px;
+    background:#1f2937;
+    border-bottom:1px solid #374151;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
 
-        .sender {
-            font-size: 12px;
-            opacity: .75;
-            margin-bottom: 4px;
-        }
+.owner{
+    font-size:18px;
+    font-weight:bold;
+}
 
-        .messageBottom {
-            font-size: 11px;
-            opacity: .75;
-            text-align: right;
-            margin-top: 4px;
-        }
+.room{
+    color:#9ca3af;
+    font-size:12px;
+    margin-top:3px;
+}
 
-        #typing {
-            height: 25px;
-            padding-left: 15px;
-            font-size: 13px;
-            color: #9ca3af;
-        }
+.online{
+    color:#22c55e;
+    font-size:13px;
+    margin-top:5px;
+}
 
-        .inputArea {
-            display: flex;
-            padding: 10px;
-            background: #1f2937;
-            gap: 8px;
-        }
+.clearBtn{
+    background:#dc2626;
+    color:white;
+    padding:9px 12px;
+    font-size:13px;
+}
 
-        #messageInput {
-            margin: 0;
-            flex: 1;
-        }
+#messages{
+    flex:1;
+    padding:15px;
+    overflow-y:auto;
+}
 
-        #sendButton {
-            width: 80px;
-            margin: 0;
-        }
+.message{
+    max-width:82%;
+    margin:8px 0;
+    padding:10px 12px;
+    border-radius:14px;
+    background:#374151;
+    word-wrap:break-word;
+    position:relative;
+}
 
-        .error {
-            color: #f87171;
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-    </style>
+.mine{
+    margin-left:auto;
+    background:#2563eb;
+}
+
+.sender{
+    font-size:12px;
+    opacity:.75;
+    margin-bottom:5px;
+}
+
+.messageText{
+    font-size:16px;
+    white-space:pre-wrap;
+}
+
+.messageBottom{
+    font-size:11px;
+    opacity:.75;
+    text-align:right;
+    margin-top:5px;
+}
+
+.deleteBtn{
+    display:none;
+    margin-top:8px;
+    background:#dc2626;
+    color:white;
+    font-size:12px;
+    padding:6px 10px;
+}
+
+.message.mine:hover .deleteBtn{
+    display:block;
+}
+
+#typing{
+    height:25px;
+    padding-left:15px;
+    font-size:13px;
+    color:#9ca3af;
+}
+
+.inputArea{
+    display:flex;
+    padding:10px;
+    background:#1f2937;
+    gap:8px;
+    border-top:1px solid #374151;
+}
+
+#messageInput{
+    margin:0;
+    flex:1;
+}
+
+#sendButton{
+    width:75px;
+    background:#2563eb;
+    color:white;
+    margin:0;
+}
+
+#sendButton:hover{
+    background:#1d4ed8;
+}
+
+/* NOTIFICATION */
+
+.notification{
+    position:fixed;
+    top:15px;
+    left:50%;
+    transform:translateX(-50%);
+    width:90%;
+    max-width:400px;
+    background:#1f2937;
+    border:1px solid #4b5563;
+    border-radius:12px;
+    padding:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    display:none;
+    z-index:9999;
+}
+
+.notificationTitle{
+    font-weight:bold;
+}
+
+.notificationText{
+    color:#d1d5db;
+    margin-top:4px;
+    font-size:14px;
+}
+
+.empty{
+    text-align:center;
+    color:#9ca3af;
+    margin-top:40px;
+}
+
+</style>
 </head>
 
 <body>
 
-    <!-- JOIN SCREEN -->
-    <div class="screen" id="joinScreen">
 
-        <div class="card">
+<!-- =========================
+     JOIN SCREEN
+========================= -->
 
-            <h1>🔒 Private Chat</h1>
+<div class="screen" id="joinScreen">
 
-            <input
-                id="nameInput"
-                type="text"
-                placeholder="Apna naam / nickname"
-                maxlength="30"
-            >
+<div class="card">
 
-            <input
-                id="roomInput"
-                type="text"
-                placeholder="Room Code"
-                maxlength="30"
-            >
+<h1>🔒 Private Chat</h1>
 
-            <button id="joinButton">
-                JOIN ROOM
-            </button>
+<input
+id="nameInput"
+type="text"
+placeholder="Apna naam / nickname"
+maxlength="30"
+>
 
-            <div class="error" id="error"></div>
+<input
+id="roomInput"
+type="text"
+placeholder="Room Code"
+maxlength="30"
+>
 
-        </div>
+<button
+class="joinBtn"
+id="joinButton"
+>
+JOIN ROOM
+</button>
 
-    </div>
+<div
+class="error"
+id="error"
+></div>
 
+</div>
 
-    <!-- CHAT SCREEN -->
-    <div id="chatScreen">
-
-        <div class="header">
-
-            <div class="owner">
-                Owner: Govind
-            </div>
-
-            <div class="online">
-                🟢 <span id="onlineCount">0</span> Online
-            </div>
-
-        </div>
+</div>
 
 
-        <div id="messages"></div>
+<!-- =========================
+     CHAT SCREEN
+========================= -->
 
-        <div id="typing"></div>
-
-        <div class="inputArea">
-
-            <input
-                id="messageInput"
-                type="text"
-                placeholder="Message likho..."
-                autocomplete="off"
-            >
-
-            <button id="sendButton">
-                Send
-            </button>
-
-        </div>
-
-    </div>
+<div id="chatScreen">
 
 
-    <script src="/socket.io/socket.io.js"></script>
+<div class="header">
 
-    <script>
+<div>
 
-        const socket = io();
+<div class="owner">
+🔒 Owner: Govind
+</div>
 
-        let myName = "";
-        let myRoom = "";
-        let typingTimer = null;
+<div class="room">
+Room: <span id="roomName"></span>
+</div>
 
-        let previousOnlineUsers = 0;
-        let notificationPermissionRequested = false;
+<div class="online">
+🟢 <span id="onlineCount">0</span> Online
+</div>
 
-        const joinScreen = document.getElementById("joinScreen");
-        const chatScreen = document.getElementById("chatScreen");
+</div>
 
-        const nameInput = document.getElementById("nameInput");
-        const roomInput = document.getElementById("roomInput");
+<button
+class="clearBtn"
+id="clearButton"
+>
+Clear
+</button>
 
-        const joinButton = document.getElementById("joinButton");
-
-        const onlineCount = document.getElementById("onlineCount");
-
-        const messages = document.getElementById("messages");
-
-        const messageInput = document.getElementById("messageInput");
-        const sendButton = document.getElementById("sendButton");
-
-        const typing = document.getElementById("typing");
-        const errorBox = document.getElementById("error");
+</div>
 
 
-        // NOTIFICATION PERMISSION
-        async function requestNotificationPermission() {
+<div id="messages">
 
-            if (!("Notification" in window)) {
-                return;
-            }
+<div class="empty" id="emptyMessage">
+Abhi koi message nahi hai.
+</div>
 
-            if (Notification.permission === "default") {
+</div>
 
-                try {
-                    await Notification.requestPermission();
-                } catch (error) {
-                    console.log("Notification permission error:", error);
-                }
 
-            }
+<div id="typing"></div>
 
-            notificationPermissionRequested = true;
+
+<div class="inputArea">
+
+<input
+id="messageInput"
+type="text"
+placeholder="Message likho..."
+autocomplete="off"
+maxlength="2000"
+>
+
+<button
+id="sendButton"
+>
+Send
+</button>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     CUSTOM NOTIFICATION
+========================= -->
+
+<div
+class="notification"
+id="customNotification"
+>
+
+<div
+class="notificationTitle"
+id="notificationTitle"
+></div>
+
+<div
+class="notificationText"
+id="notificationText"
+></div>
+
+</div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const socket = io();
+
+
+let myName = "";
+let myRoom = "";
+let typingTimer = null;
+
+
+/* ELEMENTS */
+
+const joinScreen =
+document.getElementById("joinScreen");
+
+const chatScreen =
+document.getElementById("chatScreen");
+
+const nameInput =
+document.getElementById("nameInput");
+
+const roomInput =
+document.getElementById("roomInput");
+
+const joinButton =
+document.getElementById("joinButton");
+
+const roomName =
+document.getElementById("roomName");
+
+const onlineCount =
+document.getElementById("onlineCount");
+
+const messages =
+document.getElementById("messages");
+
+const messageInput =
+document.getElementById("messageInput");
+
+const sendButton =
+document.getElementById("sendButton");
+
+const typing =
+document.getElementById("typing");
+
+const errorBox =
+document.getElementById("error");
+
+const clearButton =
+document.getElementById("clearButton");
+
+const emptyMessage =
+document.getElementById("emptyMessage");
+
+const customNotification =
+document.getElementById("customNotification");
+
+const notificationTitle =
+document.getElementById("notificationTitle");
+
+const notificationText =
+document.getElementById("notificationText");
+
+
+/* =========================
+   BROWSER NOTIFICATION
+========================= */
+
+async function requestNotificationPermission(){
+
+    if(!("Notification" in window)){
+        return;
+    }
+
+    if(Notification.permission === "default"){
+
+        try{
+
+            await Notification.requestPermission();
+
+        }catch(error){
+
+            console.log(error);
+
         }
 
+    }
 
-        // SHOW NOTIFICATION
-        function showNotification(title, body) {
+}
 
-            if (!("Notification" in window)) {
-                return;
-            }
 
-            if (Notification.permission !== "granted") {
-                return;
-            }
+function showNotification(title,text){
 
-            if (document.visibilityState === "visible") {
-                return;
-            }
+    /*
+       Browser background notification
+    */
 
-            new Notification(title, {
-                body: body,
-                icon: "/favicon.ico"
+    if(
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        document.visibilityState !== "visible"
+    ){
+
+        try{
+
+            new Notification(title,{
+                body:text,
+                icon:"/favicon.ico"
             });
+
+        }catch(error){
+
+            console.log(error);
+
         }
 
-
-        // JOIN ROOM
-        joinButton.addEventListener("click", async () => {
-
-            myName = nameInput.value.trim();
-            myRoom = roomInput.value.trim().toUpperCase();
-
-            if (!myName) {
-                errorBox.textContent = "Apna naam dalo.";
-                return;
-            }
-
-            if (!myRoom) {
-                errorBox.textContent = "Room Code dalo.";
-                return;
-            }
-
-            errorBox.textContent = "";
-
-            await requestNotificationPermission();
-
-            socket.emit("joinRoom", {
-                name: myName,
-                roomCode: myRoom
-            });
-
-            joinScreen.style.display = "none";
-            chatScreen.style.display = "flex";
-
-            messageInput.focus();
-        });
+    }
 
 
-        // ONLINE USERS
-        socket.on("onlineUsers", (users) => {
+    /*
+       Website notification
+    */
 
-            const currentOnlineUsers = users.length;
+    if(document.visibilityState === "visible"){
 
-            onlineCount.textContent = currentOnlineUsers;
+        notificationTitle.textContent = title;
 
+        notificationText.textContent = text;
 
-            // Agar pehle sirf tum online the
-            // aur ab doosra user online aaya
-            if (
-                previousOnlineUsers === 1 &&
-                currentOnlineUsers > 1
-            ) {
-
-                const otherUser = users.find(user => {
-
-                    if (typeof user === "string") {
-                        return user !== myName;
-                    }
-
-                    return user.name !== myName;
-
-                });
+        customNotification.style.display = "block";
 
 
-                let otherName = "Someone";
+        setTimeout(()=>{
 
-                if (otherUser) {
+            customNotification.style.display = "none";
 
-                    if (typeof otherUser === "string") {
-                        otherName = otherUser;
-                    } else {
-                        otherName = otherUser.name || "Someone";
-                    }
+        },4000);
 
-                }
+    }
 
-                showNotification(
-                    "Private Chat",
-                    otherName + " is online"
-                );
-            }
+}
 
 
-            previousOnlineUsers = currentOnlineUsers;
+/* =========================
+   JOIN
+========================= */
 
-        });
+joinButton.addEventListener(
+"click",
+async()=>{
 
+    myName =
+    nameInput.value.trim();
 
-        // MESSAGE HISTORY
-        socket.on("messageHistory", (history) => {
-
-            messages.innerHTML = "";
-
-            history.forEach(message => {
-                addMessage(message);
-            });
-
-            scrollBottom();
-
-        });
+    myRoom =
+    roomInput.value.trim().toUpperCase();
 
 
-        // NEW MESSAGE
-        socket.on("newMessage", (message) => {
+    if(!myName){
 
+        errorBox.textContent =
+        "Apna naam dalo.";
+
+        return;
+
+    }
+
+
+    if(!myRoom){
+
+        errorBox.textContent =
+        "Room Code dalo.";
+
+        return;
+
+    }
+
+
+    errorBox.textContent = "";
+
+
+    await requestNotificationPermission();
+
+
+    socket.emit(
+        "joinRoom",
+        {
+            name:myName,
+            roomCode:myRoom
+        }
+    );
+
+
+    roomName.textContent =
+    myRoom;
+
+
+    joinScreen.style.display =
+    "none";
+
+    chatScreen.style.display =
+    "flex";
+
+
+    messageInput.focus();
+
+});
+
+
+/* ENTER JOIN */
+
+nameInput.addEventListener(
+"keydown",
+e=>{
+
+    if(e.key === "Enter"){
+
+        roomInput.focus();
+
+    }
+
+});
+
+
+roomInput.addEventListener(
+"keydown",
+e=>{
+
+    if(e.key === "Enter"){
+
+        joinButton.click();
+
+    }
+
+});
+
+
+/* =========================
+   ONLINE USERS
+========================= */
+
+socket.on(
+"onlineUsers",
+users=>{
+
+    onlineCount.textContent =
+    users.length;
+
+});
+
+
+/* =========================
+   MESSAGE HISTORY
+========================= */
+
+socket.on(
+"messageHistory",
+history=>{
+
+    messages.innerHTML = "";
+
+
+    if(history.length === 0){
+
+        messages.appendChild(
+            createEmptyMessage()
+        );
+
+    }
+
+
+    history.forEach(
+        message=>{
             addMessage(message);
+        }
+    );
 
-            scrollBottom();
 
-            if (message.senderId !== socket.id) {
+    scrollBottom();
 
-                socket.emit("messageDelivered", {
-                    messageId: message.id
-                });
+});
 
-                if (document.visibilityState === "visible") {
 
-                    socket.emit("messageSeen", {
-                        messageId: message.id
-                    });
+function createEmptyMessage(){
 
-                } else {
+    const div =
+    document.createElement("div");
 
-                    showNotification(
-                        message.senderName,
-                        message.text
-                    );
+    div.className = "empty";
 
+    div.textContent =
+    "Abhi koi message nahi hai.";
+
+    return div;
+
+}
+
+
+/* =========================
+   NEW MESSAGE
+========================= */
+
+socket.on(
+"newMessage",
+message=>{
+
+    const oldEmpty =
+    messages.querySelector(".empty");
+
+    if(oldEmpty){
+        oldEmpty.remove();
+    }
+
+
+    addMessage(message);
+
+    scrollBottom();
+
+
+    /*
+       Agar message doosre user ka hai
+    */
+
+    if(message.senderId !== socket.id){
+
+        socket.emit(
+            "messageDelivered",
+            {
+                messageId:message.id
+            }
+        );
+
+
+        if(
+            document.visibilityState ===
+            "visible"
+        ){
+
+            socket.emit(
+                "messageSeen",
+                {
+                    messageId:message.id
                 }
-            }
-
-        });
-
-
-        // ADD MESSAGE
-        function addMessage(message) {
-
-            const div = document.createElement("div");
-
-            div.className = "message";
-
-            if (message.senderId === socket.id) {
-                div.classList.add("mine");
-            }
-
-            const sender = document.createElement("div");
-
-            sender.className = "sender";
-
-            sender.textContent =
-                message.senderId === socket.id
-                    ? "You"
-                    : message.senderName;
-
-            const text = document.createElement("div");
-
-            text.textContent = message.text;
-
-            const bottom = document.createElement("div");
-
-            bottom.className = "messageBottom";
-
-            const time = new Date(message.time);
-
-            bottom.textContent =
-                time.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                });
-
-            if (message.senderId === socket.id) {
-
-                bottom.dataset.messageId = message.id;
-
-                bottom.textContent += "  ✓";
-
-            }
-
-            div.appendChild(sender);
-            div.appendChild(text);
-            div.appendChild(bottom);
-
-            messages.appendChild(div);
+            );
 
         }
 
 
-        // SENT / DELIVERED / SEEN STATUS
-        socket.on("messageStatus", (data) => {
+        showNotification(
+            message.senderName,
+            message.text
+        );
 
-            const statusElement =
-                document.querySelector(
-                    `[data-message-id="${data.messageId}"]`
+    }
+
+});
+
+
+/* =========================
+   ADD MESSAGE
+========================= */
+
+function addMessage(message){
+
+    const div =
+    document.createElement("div");
+
+    div.className =
+    "message";
+
+
+    const isMine =
+    message.senderId === socket.id;
+
+
+    if(isMine){
+
+        div.classList.add("mine");
+
+    }
+
+
+    /* SENDER */
+
+    const sender =
+    document.createElement("div");
+
+    sender.className =
+    "sender";
+
+    sender.textContent =
+    isMine
+        ? "You"
+        : message.senderName;
+
+
+    /* TEXT */
+
+    const text =
+    document.createElement("div");
+
+    text.className =
+    "messageText";
+
+    text.textContent =
+    message.text;
+
+
+    /* BOTTOM */
+
+    const bottom =
+    document.createElement("div");
+
+    bottom.className =
+    "messageBottom";
+
+
+    const time =
+    new Date(message.time);
+
+
+    bottom.textContent =
+    time.toLocaleTimeString(
+        [],
+        {
+            hour:"2-digit",
+            minute:"2-digit"
+        }
+    );
+
+
+    if(isMine){
+
+        bottom.dataset.messageId =
+        message.id;
+
+        bottom.textContent +=
+        "  ✓";
+
+    }
+
+
+    /* DELETE */
+
+    if(isMine){
+
+        const deleteButton =
+        document.createElement("button");
+
+        deleteButton.className =
+        "deleteBtn";
+
+        deleteButton.textContent =
+        "🗑️ Delete for everyone";
+
+
+        deleteButton.addEventListener(
+        "click",
+        ()=>{
+
+            const confirmDelete =
+            confirm(
+                "Kya message sabke liye delete karna hai?"
+            );
+
+
+            if(confirmDelete){
+
+                socket.emit(
+                    "deleteMessageForEveryone",
+                    {
+                        messageId:message.id
+                    }
                 );
 
-            if (!statusElement) return;
-
-            const currentTime =
-                statusElement.textContent.split("  ")[0];
-
-            if (data.status === "sent") {
-
-                statusElement.textContent =
-                    currentTime + "  ✓";
-
-            }
-
-            if (data.status === "delivered") {
-
-                statusElement.textContent =
-                    currentTime + "  ✓✓";
-
-            }
-
-            if (data.status === "seen") {
-
-                statusElement.textContent =
-                    currentTime + "  ✓✓ Seen";
-
             }
 
         });
 
 
-        // TYPING
-        messageInput.addEventListener("input", () => {
+        div.appendChild(
+            deleteButton
+        );
 
-            socket.emit("typing");
-
-            clearTimeout(typingTimer);
-
-            typingTimer = setTimeout(() => {
-
-                socket.emit("stopTyping");
-
-            }, 1000);
-
-        });
+    }
 
 
-        socket.on("userTyping", (user) => {
+    div.appendChild(sender);
 
-            typing.textContent =
-                user.name + " is typing...";
+    div.appendChild(text);
 
-        });
-
-
-        socket.on("userStoppedTyping", () => {
-
-            typing.textContent = "";
-
-        });
+    div.appendChild(bottom);
 
 
-        // SEND MESSAGE
-        function sendMessage() {
-
-            const text = messageInput.value.trim();
-
-            if (!text) return;
-
-            socket.emit("sendMessage", text);
-
-            messageInput.value = "";
-
-            socket.emit("stopTyping");
-
-            messageInput.focus();
-
-        }
+    div.dataset.id =
+    message.id;
 
 
-        sendButton.addEventListener("click", sendMessage);
+    messages.appendChild(div);
+
+}
 
 
-        messageInput.addEventListener("keydown", (event) => {
+/* =========================
+   MESSAGE STATUS
+========================= */
 
-            if (event.key === "Enter") {
+socket.on(
+"messageStatus",
+data=>{
 
-                event.preventDefault();
+    const element =
+    document.querySelector(
+        `[data-message-id="${data.messageId}"]`
+    );
 
-                sendMessage();
+
+    if(!element) return;
+
+
+    const time =
+    element.textContent
+    .split("  ")[0];
+
+
+    if(data.status === "sent"){
+
+        element.textContent =
+        time + "  ✓";
+
+    }
+
+
+    if(data.status === "delivered"){
+
+        element.textContent =
+        time + "  ✓✓";
+
+    }
+
+
+    if(data.status === "seen"){
+
+        element.textContent =
+        time + "  ✓✓ Seen";
+
+    }
+
+});
+
+
+/* =========================
+   DELETE MESSAGE EVENT
+========================= */
+
+socket.on(
+"messageDeleted",
+data=>{
+
+    const message =
+    messages.querySelector(
+        `[data-id="${data.messageId}"]`
+    );
+
+
+    if(message){
+
+        message.remove();
+
+    }
+
+
+    if(
+        messages.querySelectorAll(
+            ".message"
+        ).length === 0
+    ){
+
+        messages.appendChild(
+            createEmptyMessage()
+        );
+
+    }
+
+});
+
+
+/* =========================
+   CLEAR CHAT
+========================= */
+
+clearButton.addEventListener(
+"click",
+()=>{
+
+    const confirmClear =
+    confirm(
+        "Kya poori chat sabke liye clear karni hai?"
+    );
+
+
+    if(!confirmClear){
+        return;
+    }
+
+
+    socket.emit(
+        "clearChat"
+    );
+
+});
+
+
+socket.on(
+"chatCleared",
+()=>{
+
+    messages.innerHTML = "";
+
+    messages.appendChild(
+        createEmptyMessage()
+    );
+
+});
+
+
+/* =========================
+   TYPING
+========================= */
+
+messageInput.addEventListener(
+"input",
+()=>{
+
+    socket.emit(
+        "typing"
+    );
+
+
+    clearTimeout(
+        typingTimer
+    );
+
+
+    typingTimer =
+    setTimeout(
+        ()=>{
+
+            socket.emit(
+                "stopTyping"
+            );
+
+        },
+        1000
+    );
+
+});
+
+
+socket.on(
+"userTyping",
+user=>{
+
+    typing.textContent =
+    user.name +
+    " is typing...";
+
+});
+
+
+socket.on(
+"userStoppedTyping",
+()=>{
+
+    typing.textContent = "";
+
+});
+
+
+/* =========================
+   SEND MESSAGE
+========================= */
+
+function sendMessage(){
+
+    const text =
+    messageInput.value.trim();
+
+
+    if(!text){
+        return;
+    }
+
+
+    socket.emit(
+        "sendMessage",
+        text
+    );
+
+
+    messageInput.value = "";
+
+    socket.emit(
+        "stopTyping"
+    );
+
+
+    messageInput.focus();
+
+}
+
+
+sendButton.addEventListener(
+"click",
+sendMessage
+);
+
+
+messageInput.addEventListener(
+"keydown",
+event=>{
+
+    if(event.key === "Enter"){
+
+        event.preventDefault();
+
+        sendMessage();
+
+    }
+
+});
+
+
+/* =========================
+   VISIBILITY / SEEN
+========================= */
+
+document.addEventListener(
+"visibilitychange",
+()=>{
+
+    if(
+        document.visibilityState ===
+        "visible"
+    ){
+
+        /*
+           Visible होने पर latest messages
+           को seen भेजने के लिए server को
+           messageSeen events भेजेंगे।
+        */
+
+        const messageElements =
+        messages.querySelectorAll(
+            ".message"
+        );
+
+
+        messageElements.forEach(
+        element=>{
+
+            const id =
+            element.dataset.id;
+
+            if(id){
+
+                socket.emit(
+                    "messageSeen",
+                    {
+                        messageId:id
+                    }
+                );
 
             }
 
         });
 
+    }
 
-        function scrollBottom() {
-
-            messages.scrollTop = messages.scrollHeight;
-
-        }
+});
 
 
-        // ERROR
-        socket.on("errorMessage", (message) => {
+/* =========================
+   SCROLL
+========================= */
 
-            errorBox.textContent = message;
+function scrollBottom(){
 
-        });
+    messages.scrollTop =
+    messages.scrollHeight;
 
-    </script>
+}
+
+
+/* =========================
+   ERROR
+========================= */
+
+socket.on(
+"errorMessage",
+message=>{
+
+    errorBox.textContent =
+    message;
+
+});
+
+
+/* =========================
+   USER JOINED
+========================= */
+
+socket.on(
+"userJoined",
+user=>{
+
+    showNotification(
+        "Private Chat",
+        user.name + " online aa gaya."
+    );
+
+});
+
+
+/* =========================
+   USER LEFT
+========================= */
+
+socket.on(
+"userLeft",
+user=>{
+
+    showNotification(
+        "Private Chat",
+        user.name + " offline ho gaya."
+    );
+
+});
+
+
+</script>
 
 </body>
 </html>
