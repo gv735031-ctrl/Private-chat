@@ -74,20 +74,18 @@
         .header {
             padding: 15px;
             background: #1f2937;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             border-bottom: 1px solid #374151;
         }
 
-        .roomInfo {
-            font-size: 14px;
+        .owner {
+            font-size: 18px;
+            font-weight: bold;
         }
 
         .online {
             color: #22c55e;
             font-size: 13px;
-            margin-top: 3px;
+            margin-top: 5px;
         }
 
         #messages {
@@ -195,16 +193,12 @@
 
         <div class="header">
 
-            <div>
-                <strong>🔒 Private Room</strong>
+            <div class="owner">
+                Owner: Govind
+            </div>
 
-                <div class="roomInfo">
-                    Room: <span id="roomName"></span>
-                </div>
-
-                <div class="online">
-                    🟢 <span id="onlineCount">0</span> Online
-                </div>
+            <div class="online">
+                🟢 <span id="onlineCount">0</span> Online
             </div>
 
         </div>
@@ -242,6 +236,9 @@
         let myRoom = "";
         let typingTimer = null;
 
+        let previousOnlineUsers = 0;
+        let notificationPermissionRequested = false;
+
         const joinScreen = document.getElementById("joinScreen");
         const chatScreen = document.getElementById("chatScreen");
 
@@ -250,7 +247,6 @@
 
         const joinButton = document.getElementById("joinButton");
 
-        const roomName = document.getElementById("roomName");
         const onlineCount = document.getElementById("onlineCount");
 
         const messages = document.getElementById("messages");
@@ -262,8 +258,51 @@
         const errorBox = document.getElementById("error");
 
 
+        // NOTIFICATION PERMISSION
+        async function requestNotificationPermission() {
+
+            if (!("Notification" in window)) {
+                return;
+            }
+
+            if (Notification.permission === "default") {
+
+                try {
+                    await Notification.requestPermission();
+                } catch (error) {
+                    console.log("Notification permission error:", error);
+                }
+
+            }
+
+            notificationPermissionRequested = true;
+        }
+
+
+        // SHOW NOTIFICATION
+        function showNotification(title, body) {
+
+            if (!("Notification" in window)) {
+                return;
+            }
+
+            if (Notification.permission !== "granted") {
+                return;
+            }
+
+            if (document.visibilityState === "visible") {
+                return;
+            }
+
+            new Notification(title, {
+                body: body,
+                icon: "/favicon.ico"
+            });
+        }
+
+
         // JOIN ROOM
-        joinButton.addEventListener("click", () => {
+        joinButton.addEventListener("click", async () => {
 
             myName = nameInput.value.trim();
             myRoom = roomInput.value.trim().toUpperCase();
@@ -280,12 +319,12 @@
 
             errorBox.textContent = "";
 
+            await requestNotificationPermission();
+
             socket.emit("joinRoom", {
                 name: myName,
                 roomCode: myRoom
             });
-
-            roomName.textContent = myRoom;
 
             joinScreen.style.display = "none";
             chatScreen.style.display = "flex";
@@ -297,7 +336,49 @@
         // ONLINE USERS
         socket.on("onlineUsers", (users) => {
 
-            onlineCount.textContent = users.length;
+            const currentOnlineUsers = users.length;
+
+            onlineCount.textContent = currentOnlineUsers;
+
+
+            // Agar pehle sirf tum online the
+            // aur ab doosra user online aaya
+            if (
+                previousOnlineUsers === 1 &&
+                currentOnlineUsers > 1
+            ) {
+
+                const otherUser = users.find(user => {
+
+                    if (typeof user === "string") {
+                        return user !== myName;
+                    }
+
+                    return user.name !== myName;
+
+                });
+
+
+                let otherName = "Someone";
+
+                if (otherUser) {
+
+                    if (typeof otherUser === "string") {
+                        otherName = otherUser;
+                    } else {
+                        otherName = otherUser.name || "Someone";
+                    }
+
+                }
+
+                showNotification(
+                    "Private Chat",
+                    otherName + " is online"
+                );
+            }
+
+
+            previousOnlineUsers = currentOnlineUsers;
 
         });
 
@@ -323,20 +404,24 @@
 
             scrollBottom();
 
-            // Agar message kisi aur ne bheja hai
             if (message.senderId !== socket.id) {
 
-                // Delivered
                 socket.emit("messageDelivered", {
                     messageId: message.id
                 });
 
-                // Seen
                 if (document.visibilityState === "visible") {
 
                     socket.emit("messageSeen", {
                         messageId: message.id
                     });
+
+                } else {
+
+                    showNotification(
+                        message.senderName,
+                        message.text
+                    );
 
                 }
             }
@@ -407,24 +492,27 @@
 
             if (!statusElement) return;
 
+            const currentTime =
+                statusElement.textContent.split("  ")[0];
+
             if (data.status === "sent") {
 
                 statusElement.textContent =
-                    statusElement.textContent.split("  ")[0] + "  ✓";
+                    currentTime + "  ✓";
 
             }
 
             if (data.status === "delivered") {
 
                 statusElement.textContent =
-                    statusElement.textContent.split("  ")[0] + "  ✓✓";
+                    currentTime + "  ✓✓";
 
             }
 
             if (data.status === "seen") {
 
                 statusElement.textContent =
-                    statusElement.textContent.split("  ")[0] + "  ✓✓ Seen";
+                    currentTime + "  ✓✓ Seen";
 
             }
 
