@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+        }
+
+        .screen {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 430px;
+            background: #1f2937;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 10px 35px rgba(0,0,0,.35);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        input {
+            background: #374151;
+            color: white;
+            outline: none;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #chatScreen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 15px;
+            background: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #374151;
+        }
+
+        .roomInfo {
+            font-size: 14px;
+        }
+
+        .online {
+            color: #22c55e;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        #messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 80%;
+            margin: 8px 0;
+            padding: 10px 12px;
+            border-radius: 13px;
+            background: #374151;
+            word-wrap: break-word;
+        }
+
+        .mine {
+            margin-left: auto;
+            background: #2563eb;
+        }
+
+        .sender {
+            font-size: 12px;
+            opacity: .75;
+            margin-bottom: 4px;
+        }
+
+        .messageBottom {
+            font-size: 11px;
+            opacity: .75;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        #typing {
+            height: 25px;
+            padding-left: 15px;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        .inputArea {
+            display: flex;
+            padding: 10px;
+            background: #1f2937;
+            gap: 8px;
+        }
+
+        #messageInput {
+            margin: 0;
+            flex: 1;
+        }
+
+        #sendButton {
+            width: 80px;
+            margin: 0;
+        }
+
+        .error {
+            color: #f87171;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- JOIN SCREEN -->
+    <div class="screen" id="joinScreen">
+
+        <div class="card">
+
+            <h1>🔒 Private Chat</h1>
+
+            <input
+                id="nameInput"
+                type="text"
+                placeholder="Apna naam / nickname"
+                maxlength="30"
+            >
+
+            <input
+                id="roomInput"
+                type="text"
+                placeholder="Room Code"
+                maxlength="30"
+            >
+
+            <button id="joinButton">
+                JOIN ROOM
+            </button>
+
+            <div class="error" id="error"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CHAT SCREEN -->
+    <div id="chatScreen">
+
+        <div class="header">
+
+            <div>
+                <strong>🔒 Private Room</strong>
+
+                <div class="roomInfo">
+                    Room: <span id="roomName"></span>
+                </div>
+
+                <div class="online">
+                    🟢 <span id="onlineCount">0</span> Online
+                </div>
+            </div>
+
+        </div>
+
+
+        <div id="messages"></div>
+
+        <div id="typing"></div>
+
+        <div class="inputArea">
+
+            <input
+                id="messageInput"
+                type="text"
+                placeholder="Message likho..."
+                autocomplete="off"
+            >
+
+            <button id="sendButton">
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+
+        const socket = io();
+
+        let myName = "";
+        let myRoom = "";
+        let typingTimer = null;
+
+        const joinScreen = document.getElementById("joinScreen");
+        const chatScreen = document.getElementById("chatScreen");
+
+        const nameInput = document.getElementById("nameInput");
+        const roomInput = document.getElementById("roomInput");
+
+        const joinButton = document.getElementById("joinButton");
+
+        const roomName = document.getElementById("roomName");
+        const onlineCount = document.getElementById("onlineCount");
+
+        const messages = document.getElementById("messages");
+
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+
+        const typing = document.getElementById("typing");
+        const errorBox = document.getElementById("error");
+
+
+        // JOIN ROOM
+        joinButton.addEventListener("click", () => {
+
+            myName = nameInput.value.trim();
+            myRoom = roomInput.value.trim().toUpperCase();
+
+            if (!myName) {
+                errorBox.textContent = "Apna naam dalo.";
+                return;
+            }
+
+            if (!myRoom) {
+                errorBox.textContent = "Room Code dalo.";
+                return;
+            }
+
+            errorBox.textContent = "";
+
+            socket.emit("joinRoom", {
+                name: myName,
+                roomCode: myRoom
+            });
+
+            roomName.textContent = myRoom;
+
+            joinScreen.style.display = "none";
+            chatScreen.style.display = "flex";
+
+            messageInput.focus();
+        });
+
+
+        // ONLINE USERS
+        socket.on("onlineUsers", (users) => {
+
+            onlineCount.textContent = users.length;
+
+        });
+
+
+        // MESSAGE HISTORY
+        socket.on("messageHistory", (history) => {
+
+            messages.innerHTML = "";
+
+            history.forEach(message => {
+                addMessage(message);
+            });
+
+            scrollBottom();
+
+        });
+
+
+        // NEW MESSAGE
+        socket.on("newMessage", (message) => {
+
+            addMessage(message);
+
+            scrollBottom();
+
+            // Agar message kisi aur ne bheja hai
+            if (message.senderId !== socket.id) {
+
+                // Delivered
+                socket.emit("messageDelivered", {
+                    messageId: message.id
+                });
+
+                // Seen
+                if (document.visibilityState === "visible") {
+
+                    socket.emit("messageSeen", {
+                        messageId: message.id
+                    });
+
+                }
+            }
+
+        });
+
+
+        // ADD MESSAGE
+        function addMessage(message) {
+
+            const div = document.createElement("div");
+
+            div.className = "message";
+
+            if (message.senderId === socket.id) {
+                div.classList.add("mine");
+            }
+
+            const sender = document.createElement("div");
+
+            sender.className = "sender";
+
+            sender.textContent =
+                message.senderId === socket.id
+                    ? "You"
+                    : message.senderName;
+
+            const text = document.createElement("div");
+
+            text.textContent = message.text;
+
+            const bottom = document.createElement("div");
+
+            bottom.className = "messageBottom";
+
+            const time = new Date(message.time);
+
+            bottom.textContent =
+                time.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+            if (message.senderId === socket.id) {
+
+                bottom.dataset.messageId = message.id;
+
+                bottom.textContent += "  ✓";
+
+            }
+
+            div.appendChild(sender);
+            div.appendChild(text);
+            div.appendChild(bottom);
+
+            messages.appendChild(div);
+
+        }
+
+
+        // SENT / DELIVERED / SEEN STATUS
+        socket.on("messageStatus", (data) => {
+
+            const statusElement =
+                document.querySelector(
+                    `[data-message-id="${data.messageId}"]`
+                );
+
+            if (!statusElement) return;
+
+            if (data.status === "sent") {
+
+                statusElement.textContent =
+                    statusElement.textContent.split("  ")[0] + "  ✓";
+
+            }
+
+            if (data.status === "delivered") {
+
+                statusElement.textContent =
+                    statusElement.textContent.split("  ")[0] + "  ✓✓";
+
+            }
+
+            if (data.status === "seen") {
+
+                statusElement.textContent =
+                    statusElement.textContent.split("  ")[0] + "  ✓✓ Seen";
+
+            }
+
+        });
+
+
+        // TYPING
+        messageInput.addEventListener("input", () => {
+
+            socket.emit("typing");
+
+            clearTimeout(typingTimer);
+
+            typingTimer = setTimeout(() => {
+
+                socket.emit("stopTyping");
+
+            }, 1000);
+
+        });
+
+
+        socket.on("userTyping", (user) => {
+
+            typing.textContent =
+                user.name + " is typing...";
+
+        });
+
+
+        socket.on("userStoppedTyping", () => {
+
+            typing.textContent = "";
+
+        });
+
+
+        // SEND MESSAGE
+        function sendMessage() {
+
+            const text = messageInput.value.trim();
+
+            if (!text) return;
+
+            socket.emit("sendMessage", text);
+
+            messageInput.value = "";
+
+            socket.emit("stopTyping");
+
+            messageInput.focus();
+
+        }
+
+
+        sendButton.addEventListener("click", sendMessage);
+
+
+        messageInput.addEventListener("keydown", (event) => {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+
+        });
+
+
+        function scrollBottom() {
+
+            messages.scrollTop = messages.scrollHeight;
+
+        }
+
+
+        // ERROR
+        socket.on("errorMessage", (message) => {
+
+            errorBox.textContent = message;
+
+        });
+
+    </script>
+
+</body>
+</html>
