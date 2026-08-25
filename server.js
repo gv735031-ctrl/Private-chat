@@ -30,15 +30,12 @@ function getOnlineUsers(roomCode) {
 
     if (!room) return [];
 
-    return [...room.users.values()].map(user => ({
-        id: user.id,
-        name: user.name
-    }));
+    return [...room.users.values()];
 }
 
 io.on("connection", (socket) => {
 
-    console.log("User connected:", socket.id);
+    console.log("Connected:", socket.id);
 
     // JOIN ROOM
     socket.on("joinRoom", ({ roomCode, name }) => {
@@ -51,8 +48,13 @@ io.on("connection", (socket) => {
             return;
         }
 
-        roomCode = String(roomCode).trim().toUpperCase();
-        name = String(name).trim().slice(0, 30);
+        roomCode = String(roomCode)
+            .trim()
+            .toUpperCase();
+
+        name = String(name)
+            .trim()
+            .slice(0, 30);
 
         if (!name) {
             socket.emit(
@@ -74,7 +76,7 @@ io.on("connection", (socket) => {
             name: name
         });
 
-        // Purane messages
+        // Message history
         socket.emit(
             "messageHistory",
             room.messages
@@ -86,7 +88,7 @@ io.on("connection", (socket) => {
             getOnlineUsers(roomCode)
         );
 
-        // Dusre users ko batana ki naya user online aaya
+        // New user notification
         socket.to(roomCode).emit(
             "userJoined",
             {
@@ -96,7 +98,7 @@ io.on("connection", (socket) => {
         );
 
         console.log(
-            `${name} joined room ${roomCode}`
+            `${name} joined ${roomCode}`
         );
     });
 
@@ -132,29 +134,31 @@ io.on("connection", (socket) => {
     // SEND MESSAGE
     socket.on("sendMessage", (text) => {
 
-        if (!socket.roomCode || !text) return;
+        if (!socket.roomCode || !text) {
+            return;
+        }
 
-        text = String(text).trim();
+        text = String(text)
+            .trim()
+            .slice(0, 2000);
 
         if (!text) return;
 
-        text = text.slice(0, 2000);
+        const room = rooms.get(socket.roomCode);
+
+        if (!room) return;
 
         const message = {
             id: crypto.randomUUID(),
             senderId: socket.id,
             senderName: socket.userName,
             text: text,
-            time: Date.now(),
-            status: "sent"
+            time: Date.now()
         };
-
-        const room = rooms.get(socket.roomCode);
-
-        if (!room) return;
 
         room.messages.push(message);
 
+        // Maximum 500 messages
         if (room.messages.length > 500) {
             room.messages.shift();
         }
@@ -165,7 +169,7 @@ io.on("connection", (socket) => {
             message
         );
 
-        // Sender status
+        // Sender ko sent
         socket.emit(
             "messageStatus",
             {
@@ -188,13 +192,13 @@ io.on("connection", (socket) => {
             {
                 messageId: message.id,
                 senderName: socket.userName,
-                text: message.text
+                text: text
             }
         );
     });
 
 
-    // MESSAGE DELIVERED
+    // DELIVERED
     socket.on(
         "messageDelivered",
         ({ messageId }) => {
@@ -204,7 +208,7 @@ io.on("connection", (socket) => {
             socket.to(socket.roomCode).emit(
                 "messageStatus",
                 {
-                    messageId,
+                    messageId: messageId,
                     status: "delivered"
                 }
             );
@@ -212,7 +216,7 @@ io.on("connection", (socket) => {
     );
 
 
-    // MESSAGE SEEN
+    // SEEN
     socket.on(
         "messageSeen",
         ({ messageId }) => {
@@ -222,7 +226,7 @@ io.on("connection", (socket) => {
             socket.to(socket.roomCode).emit(
                 "messageStatus",
                 {
-                    messageId,
+                    messageId: messageId,
                     status: "seen"
                 }
             );
@@ -235,34 +239,35 @@ io.on("connection", (socket) => {
         "deleteMessageForEveryone",
         ({ messageId }) => {
 
-            if (!socket.roomCode || !messageId) return;
+            if (!socket.roomCode || !messageId) {
+                return;
+            }
 
-            const room = rooms.get(socket.roomCode);
+            const room = rooms.get(
+                socket.roomCode
+            );
 
             if (!room) return;
 
-            const messageIndex =
+            const index =
                 room.messages.findIndex(
                     message =>
                         message.id === messageId
                 );
 
-            if (messageIndex === -1) return;
+            if (index === -1) return;
 
             const message =
-                room.messages[messageIndex];
+                room.messages[index];
 
-            // Sirf message bhejne wala
-            // apna message delete kar sakta hai
+            // Sirf sender apna message delete kare
             if (message.senderId !== socket.id) {
                 return;
             }
 
-            room.messages.splice(
-                messageIndex,
-                1
-            );
+            room.messages.splice(index, 1);
 
+            // Sabke screen se delete
             io.to(socket.roomCode).emit(
                 "messageDeleted",
                 {
@@ -297,64 +302,58 @@ io.on("connection", (socket) => {
         const roomCode =
             socket.roomCode;
 
-        if (!roomCode) {
-            console.log(
-                "User disconnected:",
-                socket.id
-            );
-            return;
-        }
+        if (!roomCode) return;
 
         const room =
             rooms.get(roomCode);
 
-        if (room) {
+        if (!room) return;
 
-            room.users.delete(
-                socket.id
-            );
+        room.users.delete(socket.id);
 
-            io.to(roomCode).emit(
-                "userStoppedTyping",
-                {
-                    id: socket.id
-                }
-            );
-
-            io.to(roomCode).emit(
-                "onlineUsers",
-                getOnlineUsers(roomCode)
-            );
-
-            // Dusre users ko offline notification
-            io.to(roomCode).emit(
-                "userLeft",
-                {
-                    id: socket.id,
-                    name: socket.userName
-                }
-            );
-
-            if (room.users.size === 0) {
-
-                setTimeout(() => {
-
-                    const currentRoom =
-                        rooms.get(roomCode);
-
-                    if (
-                        currentRoom &&
-                        currentRoom.users.size === 0
-                    ) {
-                        rooms.delete(roomCode);
-                    }
-
-                }, 10 * 60 * 1000);
+        // Typing stop
+        io.to(roomCode).emit(
+            "userStoppedTyping",
+            {
+                id: socket.id
             }
+        );
+
+        // Online users update
+        io.to(roomCode).emit(
+            "onlineUsers",
+            getOnlineUsers(roomCode)
+        );
+
+        // User left
+        io.to(roomCode).emit(
+            "userLeft",
+            {
+                id: socket.id,
+                name: socket.userName
+            }
+        );
+
+        // Empty room cleanup
+        if (room.users.size === 0) {
+
+            setTimeout(() => {
+
+                const currentRoom =
+                    rooms.get(roomCode);
+
+                if (
+                    currentRoom &&
+                    currentRoom.users.size === 0
+                ) {
+                    rooms.delete(roomCode);
+                }
+
+            }, 10 * 60 * 1000);
         }
 
         console.log(
-            "User disconnected:",
+            "Disconnected:",
             socket.id
         );
     });
@@ -367,22 +366,21 @@ server.listen(
     "0.0.0.0",
     () => {
 
-        console.log("");
         console.log(
-            "================================"
+            "=============================="
         );
+
         console.log(
-            " PRIVATE CHAT SERVER STARTED"
+            "PRIVATE CHAT SERVER STARTED"
         );
+
         console.log(
-            "================================"
+            "Port:",
+            PORT
         );
+
         console.log(
-            `Port: ${PORT}`
+            "=============================="
         );
-        console.log(
-            "Open: http://localhost:3000"
-        );
-        console.log("");
     }
 );
